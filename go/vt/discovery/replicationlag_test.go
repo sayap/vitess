@@ -62,56 +62,39 @@ func TestFilterByReplicationLag(t *testing.T) {
 			[]uint32{},
 		},
 		{
-			"1 serving tablet",
+			"lags of (1s) - return all items with low lag.",
 			[]uint32{1},
 			[]uint32{1},
 		},
 		{
-			"lags of (1s, 1s, 1s, 30s)",
+			"lags of (1s, 1s, 1s, 30s) - return all items with low lag.",
 			[]uint32{1, 1, 1, 30},
 			[]uint32{1, 1, 1, 30},
 		},
 		{
-			"lags of (30m, 35m, 40m, 45m)",
+			"lags of (1s, 1s, 1s, 40m, 40m, 40m) - return all items with low lag.",
+			[]uint32{1, 1, 1, 40 * 60, 40 * 60, 40 * 60},
+			[]uint32{1, 1, 1},
+		},
+		{
+			"lags of (1s, 40m, 40m, 40m) - return at least 2 items if they don't have very high lag.",
+			[]uint32{1, 40 * 60, 40 * 60, 40 * 60},
+			[]uint32{1, 40 * 60},
+		},
+		{
+			"lags of (30m, 35m, 40m, 45m) - return at least 2 items if they don't have very high lag.",
 			[]uint32{30 * 60, 35 * 60, 40 * 60, 45 * 60},
-			[]uint32{30 * 60, 35 * 60, 40 * 60, 45 * 60},
+			[]uint32{30 * 60, 35 * 60},
 		},
 		{
-			"lags of (1s, 1s, 1m, 40m, 40m) - not run filter the second time as first run removed two items.",
-			[]uint32{1, 1, 60, 40 * 60, 40 * 60},
-			[]uint32{1, 1, 60},
+			"lags of (2h, 3h, 4h, 5h) - return <2 items if the others have very high lag.",
+			[]uint32{2 * 60 * 60, 3 * 60 * 60, 4 * 60 * 60, 5 * 60 * 60},
+			[]uint32{2 * 60 * 60},
 		},
 		{
-			"lags of (1s, 1s, 10m, 40m) - run filter twice to remove two items",
-			[]uint32{1, 1, 10 * 60, 40 * 60},
-			[]uint32{1, 1},
-		},
-		{
-			"lags of (1m, 100m) - return at least 2 items to avoid overloading if the 2nd one is not delayed too much.",
-			[]uint32{1 * 60, 100 * 60},
-			[]uint32{1 * 60, 100 * 60},
-		},
-		{
-			"lags of (1m, 3h) - return 1 if the 2nd one is delayed too much.",
-			[]uint32{1 * 60, 3 * 60 * 60},
-			[]uint32{1 * 60},
-		},
-		{
-			"lags of (3h) - return 1 as they're all delayed too much.",
-			[]uint32{3 * 60 * 60},
-			[]uint32{3 * 60 * 60},
-		},
-		{
-			"lags of (3h, 4h) - return 2 as they're all delayed too much, but still in a good group.",
-			[]uint32{3 * 60 * 60, 4 * 60 * 60},
-			[]uint32{3 * 60 * 60, 4 * 60 * 60},
-		},
-		{
-			"lags of (3h, 30h) - return 2 as they're all delayed too much." +
-				"(different test case that before, as both tablet stats are" +
-				"widely different, not within 70% of eachother)",
+			"lags of (3h, 30h) - return nothing if all have very high lag.",
 			[]uint32{3 * 60 * 60, 30 * 60 * 60},
-			[]uint32{3 * 60 * 60, 30 * 60 * 60},
+			[]uint32{},
 		},
 	}
 
